@@ -1,0 +1,8 @@
+*.o
+sclp
+sclp16
+sclp14
+*.output
+testcases/*.ast
+testcases/*.spim
+testcases/*.ic
