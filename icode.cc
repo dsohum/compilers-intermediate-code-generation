@@ -324,8 +324,10 @@ void Compute_IC_Stmt::print_icode(ostream & file_buffer){
 			result->print_ics_opd(file_buffer);
 			file_buffer << " <- ";
 			opd1->print_ics_opd(file_buffer);
-			file_buffer<<" , ";
-			opd2->print_ics_opd(file_buffer);
+			if(op_desc.get_op()!=not_t && op_desc.get_op()!=uminus_d && op_desc.get_op()!=uminus){
+				file_buffer<<" , ";
+				opd2->print_ics_opd(file_buffer);
+			}
 			file_buffer << "\n";
 
 			break; 
@@ -338,7 +340,7 @@ void Compute_IC_Stmt::print_assembly(ostream & file_buffer){
 	CHECK_INVARIANT (opd1, "Opd1 cannot be NULL for a compute IC Stmt");
 	CHECK_INVARIANT (result, "Result cannot be NULL for a compute IC Stmt");
 
-	string operation_name = op_desc.get_name();
+	string operation_name = op_desc.get_mnemonic();
 	Assembly_Format asm_format = op_desc.get_assembly_format();
 
 	switch(asm_format) {
@@ -367,8 +369,10 @@ void Compute_IC_Stmt::print_assembly(ostream & file_buffer){
 			result->print_asm_opd(file_buffer);
 			file_buffer << ", ";
 			opd1->print_asm_opd(file_buffer);
-			file_buffer<<", ";
-			opd2->print_asm_opd(file_buffer);
+			if(op_desc.get_op()!=not_t && op_desc.get_op()!=uminus_d && op_desc.get_op()!=uminus){
+				file_buffer<<" , ";
+				opd2->print_asm_opd(file_buffer);
+			}
 			file_buffer << "\n";
 
 			break; 
@@ -377,8 +381,10 @@ void Compute_IC_Stmt::print_assembly(ostream & file_buffer){
 				"Opd2 cannot be NULL for compute IC Stmt");
 			file_buffer << "\t" << operation_name << " ";
 			opd1->print_asm_opd(file_buffer);
-			file_buffer<<", ";
-			opd2->print_asm_opd(file_buffer);
+			if(op_desc.get_op()!=not_t && op_desc.get_op()!=uminus_d && op_desc.get_op()!=uminus){
+				file_buffer<<" , ";
+				opd2->print_asm_opd(file_buffer);
+			}			
 			file_buffer << ", ";
 			result->print_asm_opd(file_buffer);
 			file_buffer << "\n";

@@ -472,7 +472,8 @@ Code_For_Ast & get_code_for_ast(Ast* rhs_op,Tgt_Op op,const Register_Use_Categor
 	} 
 	Register_Addr_Opd* result = new Register_Addr_Opd(newtemp);			//newtemp()
 	Register_Addr_Opd* opd1 = new Register_Addr_Opd(rhs_expr_register);	//opd1
-	Compute_IC_Stmt* stmt = new Compute_IC_Stmt(op,result,opd1,NULL);   //compute statement for op on opd1 and result into newtemp
+	Register_Addr_Opd* opd2 = new Register_Addr_Opd(NULL);	//opd2
+	Compute_IC_Stmt* stmt = new Compute_IC_Stmt(op,result,opd1,opd2);   //compute statement for op on opd1 and result into newtemp
 	rhs_expr_register->reset_use_for_expr_result();						//free the right expr (used only in parent,i.e. here)
 
 	// Store the statement in ic_list
