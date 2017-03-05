@@ -3,6 +3,6 @@ sclp
 sclp16
 sclp14
 *.output
-testcases/*.ast
-testcases/*.spim
-testcases/*.ic
+testcases/test**.ast
+testcases/test*.spim
+testcases/test*.ic
