@@ -370,7 +370,7 @@ void Compute_IC_Stmt::print_assembly(ostream & file_buffer){
 			file_buffer << ", ";
 			opd1->print_asm_opd(file_buffer);
 			if(op_desc.get_op()!=not_t && op_desc.get_op()!=uminus_d && op_desc.get_op()!=uminus){
-				file_buffer<<" , ";
+				file_buffer<<", ";
 				opd2->print_asm_opd(file_buffer);
 			}
 			file_buffer << "\n";
@@ -382,7 +382,7 @@ void Compute_IC_Stmt::print_assembly(ostream & file_buffer){
 			file_buffer << "\t" << operation_name << " ";
 			opd1->print_asm_opd(file_buffer);
 			if(op_desc.get_op()!=not_t && op_desc.get_op()!=uminus_d && op_desc.get_op()!=uminus){
-				file_buffer<<" , ";
+				file_buffer<<", ";
 				opd2->print_asm_opd(file_buffer);
 			}			
 			file_buffer << ", ";
@@ -437,18 +437,20 @@ void Control_Flow_IC_Stmt::print_icode(ostream & file_buffer){
 	string operation_name = op_desc.get_name();
 	file_buffer << "\t" << operation_name << ":    \t";
 	opd1->print_ics_opd(file_buffer);
-	file_buffer<<" , zero ";
-	file_buffer << ": goto "<<offset<<"\n";
+	file_buffer<<" , ";
+	opd2->print_ics_opd(file_buffer);
+	file_buffer << " : goto "<<offset<<"\n";
 }
 
 void Control_Flow_IC_Stmt::print_assembly(ostream & file_buffer){
 	CHECK_INVARIANT (opd1, "Opd1 cannot be NULL for a control flow IC Stmt");
 
-	string operation_name = op_desc.get_name();
+	string operation_name = op_desc.get_mnemonic();
 	file_buffer << "\t" << operation_name << " ";
 	opd1->print_asm_opd(file_buffer);
-	file_buffer<<", $zero";
-	file_buffer << ", "<<offset<<"\n";
+	file_buffer<<", ";
+	opd2->print_asm_opd(file_buffer);
+	file_buffer << ", "<<offset<<" \n";
 
 }
 
@@ -487,7 +489,7 @@ void Label_IC_Stmt::print_icode(ostream & file_buffer){
 		file_buffer<<"\tgoto "<<offset<<"\n";
 		break;
 	case label :
-		file_buffer<<"\n"<<offset<<":\n";
+		file_buffer<<"\n"<<offset<<":    	\n";
 	}
 }
 void Label_IC_Stmt::print_assembly(ostream & file_buffer){
@@ -498,7 +500,7 @@ void Label_IC_Stmt::print_assembly(ostream & file_buffer){
 		file_buffer<<"\tj "<<offset<<"\n";
 		break;
 	case label :
-		file_buffer<<"\n"<<offset<<":\n";
+		file_buffer<<"\n"<<offset<<":    	\n";
 	}
 
 }

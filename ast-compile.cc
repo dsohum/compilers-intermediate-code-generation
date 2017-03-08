@@ -208,18 +208,20 @@ Code_For_Ast & Selection_Statement_Ast::compile()
 	CHECK_INVARIANT((else_part != NULL), "Else part cannot be null in Selection_Statement_Ast");
 
 	//get labels to else-start and if-else-end points
-	int else_label,end_label;	
+	int else_label,end_label;
 	Code_For_Ast & cond_cfa = cond->compile();			//compile condition
-	cond_cfa.get_reg()->reset_use_for_expr_result();	//free register as next statement is branch which uses the value without creating new registers
+	cond_cfa.get_reg()->set_use_for_expr_result();		//set cond register for use
 	Code_For_Ast & then_part_cfa = then_part->compile();//compile then part	
-	else_label = Ast::labelCounter++;					//get else point label
 	Code_For_Ast & else_part_cfa = else_part->compile();//compile else part
+	else_label = Ast::labelCounter++;					//get else point label
 	end_label = Ast::labelCounter++;					//get end point label
 	
 	CHECK_INVARIANT((cond_cfa.get_reg()!=NULL),"Condition register cannot be null in Selection_Statement_Ast");
 	Register_Addr_Opd * opd1 = new Register_Addr_Opd(cond_cfa.get_reg());
-	Control_Flow_IC_Stmt* if_part =  new Control_Flow_IC_Stmt(beq, opd1, NULL, string("label")+to_string(else_label));	//branch to else
-
+	Register_Addr_Opd * zero_reg = new Register_Addr_Opd(machine_desc_object.spim_register_table[zero]);
+	Control_Flow_IC_Stmt* if_part =  new Control_Flow_IC_Stmt(beq, opd1, zero_reg, string("label")+to_string(else_label));	//branch to else
+	cond_cfa.get_reg()->reset_use_for_expr_result();		//free cond register
+	
 	Label_IC_Stmt* else_label_stmt = new Label_IC_Stmt( label, NULL , string("label")+to_string(else_label));			//else label
 	Label_IC_Stmt* end_label_stmt = new Label_IC_Stmt( label, NULL , string("label")+to_string(end_label));				//end label	
 	Label_IC_Stmt* goto_stmt = new Label_IC_Stmt( j, NULL , string("label")+to_string(end_label));						//goto end-label(for then)
@@ -253,13 +255,15 @@ Code_For_Ast & Iteration_Statement_Ast::compile()
 	end_label = Ast::labelCounter++;
 	//compile body and condition in order and free the result of cond-code-for-ast-register
 	//[nothing in between branch check and value computation;   also, branch does not create a register]
+	Code_For_Ast & cond_cfa = cond->compile();	
+	cond_cfa.get_reg()->set_use_for_expr_result();
 	Code_For_Ast & body_cfa = body->compile();	
-	Code_For_Ast & cond_cfa = cond->compile();
-	cond_cfa.get_reg()->reset_use_for_expr_result();
 	
 	//make branch statement
 	Register_Addr_Opd * opd1 = new Register_Addr_Opd(cond_cfa.get_reg());
-	Control_Flow_IC_Stmt* branch_stmt =  new Control_Flow_IC_Stmt(bne, opd1, NULL, string("label")+to_string(start_label));  //branch to start label
+	Register_Addr_Opd * zero_reg = new Register_Addr_Opd(machine_desc_object.spim_register_table[zero]);
+	Control_Flow_IC_Stmt* branch_stmt =  new Control_Flow_IC_Stmt(bne, opd1, zero_reg, string("label")+to_string(start_label));  //branch to start label
+	cond_cfa.get_reg()->reset_use_for_expr_result();
 
 	//make all the labels and goto statements
 	Label_IC_Stmt* start_label_stmt = new Label_IC_Stmt( label, NULL , string("label")+to_string(start_label));	//loop body start label
@@ -341,7 +345,66 @@ Code_For_Ast & Mult_Ast::compile()
 
 Code_For_Ast & Conditional_Operator_Ast::compile()
 {
+	CHECK_INVARIANT((cond != NULL), "Condition cannot be null in Conditional_Operator_Ast");
+	CHECK_INVARIANT((lhs != NULL), "Lhs cannot be null in Conditional_Operator_Ast");
+	CHECK_INVARIANT((rhs != NULL), "Rhs cannot be null in Conditional_Operator_Ast");
+
+	//get labels to else-start and if-else-end points
+	int else_label,end_label;	
+	Code_For_Ast & cond_cfa = cond->compile();			//compile condition
+	CHECK_INVARIANT((cond_cfa.get_reg()!=NULL),"Condition register cannot be null in Selection_Statement_Ast");
+	cond_cfa.get_reg()->set_use_for_expr_result();	//save register of condition
 	
+	Code_For_Ast & lhs_cfa = lhs->compile();			//compile lhs part	
+	CHECK_INVARIANT((lhs_cfa.get_reg()!=NULL),"Lhs register cannot be null in Selection_Statement_Ast");
+	lhs_cfa.get_reg()->set_use_for_expr_result();	//save register of condition
+	else_label = Ast::labelCounter++;					//get else point label
+
+	Code_For_Ast & rhs_cfa = rhs->compile();			//compile rhs part
+	CHECK_INVARIANT((rhs_cfa.get_reg()!=NULL),"Rhs register cannot be null in Selection_Statement_Ast");
+	rhs_cfa.get_reg()->set_use_for_expr_result();	//save register of condition
+	end_label = Ast::labelCounter++;					//get end point label
+	
+	Register_Descriptor * newtemp;
+	switch(node_data_type){
+	case int_data_type:		newtemp = machine_desc_object.get_new_register<gp_data>();  break;
+	case double_data_type:  newtemp = machine_desc_object.get_new_register<float_reg>();
+	}
+	
+	Register_Addr_Opd * opd1 = new Register_Addr_Opd(cond_cfa.get_reg());
+	Register_Addr_Opd * zero_reg = new Register_Addr_Opd(machine_desc_object.spim_register_table[zero]);
+	Control_Flow_IC_Stmt* if_part =  new Control_Flow_IC_Stmt(beq, opd1, zero_reg, string("label")+to_string(else_label));	//branch to rhs/else
+	cond_cfa.get_reg()->reset_use_for_expr_result();	//free cond register 
+
+	Register_Addr_Opd * result = new Register_Addr_Opd(newtemp);
+	opd1 = new Register_Addr_Opd(lhs_cfa.get_reg());
+	Compute_IC_Stmt *lhs_or_stmt = new Compute_IC_Stmt(or_t,result,opd1,zero_reg);
+	lhs_cfa.get_reg()->reset_use_for_expr_result();		//free lhs register 
+	opd1 = new Register_Addr_Opd(rhs_cfa.get_reg());
+	Compute_IC_Stmt *rhs_or_stmt = new Compute_IC_Stmt(or_t,result,opd1,zero_reg);
+	rhs_cfa.get_reg()->reset_use_for_expr_result();		//free rhs register 
+
+	Label_IC_Stmt* else_label_stmt = new Label_IC_Stmt( label, NULL , string("label")+to_string(else_label));			//else label
+	Label_IC_Stmt* end_label_stmt = new Label_IC_Stmt( label, NULL , string("label")+to_string(end_label));				//end label	
+	Label_IC_Stmt* goto_stmt = new Label_IC_Stmt( j, NULL , string("label")+to_string(end_label));						//goto end-label(for then)
+	
+	//put together statements in a list in order
+	list<Icode_Stmt*> ic_list;
+	if(cond_cfa.get_icode_list().empty() == false)
+		ic_list.splice(ic_list.end(),cond_cfa.get_icode_list());		//condition
+	ic_list.push_back(if_part);											//branch statement
+	if(lhs_cfa.get_icode_list().empty() == false)					
+		ic_list.splice(ic_list.end(),lhs_cfa.get_icode_list());	//lhs body
+	ic_list.push_back(lhs_or_stmt);
+	ic_list.push_back(goto_stmt);										//goto end(for then part)
+	ic_list.push_back(else_label_stmt);									//else label
+	if(rhs_cfa.get_icode_list().empty() == false)					
+		ic_list.splice(ic_list.end(),rhs_cfa.get_icode_list());	//rhs body
+	ic_list.push_back(rhs_or_stmt);
+	ic_list.push_back(end_label_stmt);									//end label
+	Code_For_Ast* selection_stmt = new Code_For_Ast(ic_list,newtemp);
+	return *selection_stmt;
+
 }
 
 
