@@ -181,7 +181,7 @@ Code_For_Ast & Boolean_Expr_Ast::compile()
 	Tgt_Op op;
 	Code_For_Ast* boolean_expr;
 	//watch out for: fixed_reg vs float_reg
-	Register_Use_Category reg_use_cat=(node_data_type==int_data_type)?gp_data:float_reg;
+	Register_Use_Category reg_use_cat=gp_data;//(node_data_type==int_data_type)?gp_data:float_reg;
 	switch(bool_op){
 		case boolean_and: 
 			op=and_t;
@@ -419,10 +419,10 @@ Code_For_Ast & Divide_Ast::compile()
 		Register_Use_Category reg_use_cat;
 	Tgt_Op op;
 	switch(node_data_type){
-	case int_data_type    :  reg_use_cat=gp_data;   op=mult;   break;
-	case double_data_type :  reg_use_cat=float_reg; op=mult_d; break;
+	case int_data_type    :  reg_use_cat=gp_data;   op=divd;   break;
+	case double_data_type :  reg_use_cat=float_reg; op=div_d; break;
 	}
-	Code_For_Ast & arith_expr = get_code_for_ast(lhs,rhs,divd,reg_use_cat,"Divide_Ast");
+	Code_For_Ast & arith_expr = get_code_for_ast(lhs,rhs,op,reg_use_cat,"Divide_Ast");
 	return arith_expr;					
 }
 
@@ -440,7 +440,7 @@ Code_For_Ast & UMinus_Ast::compile()
 	case int_data_type    :  reg_use_cat=gp_data;   op=uminus;   break;
 	case double_data_type :  reg_use_cat=float_reg; op=uminus_d; break;
 	}
-	Code_For_Ast & arith_expr = get_code_for_ast(lhs,op,gp_data,"reg_use_cat");
+	Code_For_Ast & arith_expr = get_code_for_ast(lhs,op,reg_use_cat,"reg_use_cat");
 	return arith_expr;						
 }
 
